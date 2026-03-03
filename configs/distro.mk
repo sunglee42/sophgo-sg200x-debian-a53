@@ -1,4 +1,4 @@
-DEB_DISTRO ?= noble
+DEB_DISTRO ?= trixie
 DEB_KEYSERVER ?= keyserver.ubuntu.com
 ifneq ($(findstring "$(DEB_DISTRO)","bullseye" "bookworm" "trixie"),)
 DEB_URL ?= http://deb.debian.org/debian

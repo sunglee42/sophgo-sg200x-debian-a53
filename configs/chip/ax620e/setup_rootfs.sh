@@ -59,8 +59,14 @@ usermod --password "$(echo $password | openssl passwd -1 -stdin)" debian || true
 
 # Set up fstab
 cat > /etc/fstab <<EOF
-# <file system> <mount point>   <type>  <options>                 <dump>  <pass>
-/dev/root       /               auto    defaults                  1       1
+# <file system>	<mount pt>	<type>	<options>	<dump>	<pass>
+/dev/root	/		ext4	rw,noatime,nodiratime,errors=remount-ro	0	1
+proc		/proc		proc	defaults	0	0
+devpts		/dev/pts	devpts	defaults,gid=5,mode=620,ptmxmode=0666	0	0
+tmpfs		/dev/shm	tmpfs	mode=1777,nosuid,nodev	0	0
+tmpfs		/tmp		tmpfs	mode=1777,nosuid,nodev	0	0
+tmpfs		/run		tmpfs	mode=0755,nosuid,nodev	0	0
+sysfs		/sys		sysfs	defaults	0	0
 EOF
 
 if [ "$STORAGETYPE" = "sd" ]; then
@@ -70,15 +76,7 @@ EOF
 fi
 
 if [ "$STORAGETYPE" = "emmc" ]; then
-cat > /etc/fstab <<EOF
-# <file system>	<mount pt>	<type>	<options>	<dump>	<pass>
-/dev/root	/		ext4	rw,noatime,nodiratime,errors=remount-ro	0	1
-proc		/proc		proc	defaults	0	0
-devpts		/dev/pts	devpts	defaults,gid=5,mode=620,ptmxmode=0666	0	0
-tmpfs		/dev/shm	tmpfs	mode=1777,nosuid,nodev	0	0
-tmpfs		/tmp		tmpfs	mode=1777,nosuid,nodev	0	0
-tmpfs		/run		tmpfs	mode=0755,nosuid,nodev	0	0
-sysfs		/sys		sysfs	defaults	0	0
+  cat >> /etc/fstab <<EOF
 /dev/mmcblk0p16	/boot	vfat	defaults,umask=000,utf8=true	0	0
 EOF
 fi
@@ -148,10 +146,16 @@ fi
 kernel_image=${lib_dir##*/}
 
 # set default dtb file, please verify your board version
-mkdir -p /boot/fdt/${kernel_image}/${CHIP_VENDOR}
+mkdir -p /boot/fdt/${kernel_image}
 
-cp ${lib_dir}/${CHIP_VENDOR}/*.dtb /boot/fdt/${kernel_image}/${CHIP_VENDOR}/
-
+if [ -e ${lib_dir}/${CHIP_VENDOR} ]; then
+  mkdir -p /boot/fdt/${kernel_image}/${CHIP_VENDOR}
+  cp ${lib_dir}/${CHIP_VENDOR}/*.dtb /boot/fdt/${kernel_image}/${CHIP_VENDOR}/
+elif [ "${CHIP_VENDOR}" = "axera" ]; then
+  cp ${lib_dir}/AX6*.dtb /boot/fdt/${kernel_image}/
+else
+  cp ${lib_dir}/*.dtb /boot/fdt/${kernel_image}/
+fi
 
 cat /boot/extlinux/extlinux.conf
 

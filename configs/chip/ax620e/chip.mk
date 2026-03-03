@@ -18,7 +18,7 @@ else
 $(error $(red)SDK_VER is invalid$(reset))
 endif
 
-ifeq ($(UBOOT_ARCH),arm)
+ifeq ($(BOOT_CPU),aarch64)
 SBL_CROSS_COMPILE_PATH = $(CROSS_COMPILE_PATH_64)
 SBL_CROSS_COMPILE_PREFIX = $(CROSS_COMPILE_64)
 else
@@ -449,7 +449,7 @@ $(BUILDDIR)/bsp-prepare-clone-stamp:
 
 $(BUILDDIR)/bsp-prepare-checkout-stamp: $(BUILDDIR)/bsp-prepare-clone-stamp
 	@echo "$(COLOUR_GREEN)Checking out BSP for $(BOARD)$(END_COLOUR)"
-	@cd $(BUILDDIR)/bsp && git checkout a236692
+	@cd $(BUILDDIR)/bsp && git checkout a00b87c
 	@cd $(BUILDDIR)/bsp && git submodule set-url axerabin $(GIT_USER_URL)/axerabin
 	@cd $(BUILDDIR)/bsp && git submodule set-url linux $(GIT_USER_URL)/linux
 	@cd $(BUILDDIR)/bsp && git submodule set-url u-boot $(GIT_USER_URL)/u-boot
@@ -461,6 +461,9 @@ $(BUILDDIR)/bsp-prepare-patch-stamp: $(BUILDDIR)/toolchain-prepare-patch-stamp $
 	@$(eval BSP_ROOTFS_SOURCE_DIR=$(BUILDDIR)/bsp/axerabin/$(CHIP)/rootfs)
 	@sed -i '/get-toolchain.sh/d' $(BUILDDIR)/bsp/build.sh
 	@sed -i 's|^BOARD_DTS=.*|BOARD_DTS=$(BOARD_DTS)|g' $(BUILDDIR)/bsp/scripts/envsetup_pack.sh
+	@sed -i s/'^BOARD_CHIP=.*'/'BOARD_CHIP='$(CHIP)/g $(BUILDDIR)/bsp/scripts/envsetup_pack.sh
+	@sed -i s/'^BOARD_FAMILY=.*'/'BOARD_FAMILY='$(UBOOT_CHIP)/g $(BUILDDIR)/bsp/scripts/envsetup_pack.sh
+	@sed -i s/'^KERNEL_ARCH=.*'/'KERNEL_ARCH='$(KERNEL_ARCH)/g $(BUILDDIR)/bsp/scripts/envsetup_pack.sh
 	@sed -i 's|^CROSS_COMPILE_PATH=.*|CROSS_COMPILE_PATH=$(SBL_CROSS_COMPILE_PATH)|g' $(BUILDDIR)/bsp/scripts/envsetup_pack.sh
 	@sed -i 's|^CROSS_COMPILE=.*|CROSS_COMPILE=$(SBL_CROSS_COMPILE_PREFIX)|g' $(BUILDDIR)/bsp/scripts/envsetup_pack.sh
 	@if [ "X$(findstring kvm,$(VARIANT))" = "X" ]; then \
@@ -713,7 +716,7 @@ $(BUILDDIR)/image-compile-stamp: $(BUILDDIR)/image-customize-stamp
 	@[ "$(GIT_REF)" = "develop" ] || rm -rf /host-tools/gcc/
 	@rm -rf /tmp/genimage/
 	@mkdir -p $(BUILDDIR)/input/
-	@cp -p $(BSP_INSTALL_DIR)/$(STORAGE_TYPE).img $(BUILDDIR)/input/
+	@[ ! -e $(BSP_INSTALL_DIR)/$(STORAGE_TYPE).img ] || cp -p $(BSP_INSTALL_DIR)/$(STORAGE_TYPE).img $(BUILDDIR)/input/
 	@cd $(BUILDDIR) && genimage --config /configs/chip/$(CHIP_FAMILY)/genimage_$(STORAGE_TYPE).cfg --tmppath /tmp/genimage --rootpath /rootfs/
 	@rm -rf /tmp/genimage/
 	@lz4 -9 -f $(BUILDDIR)/images/sdcard.img /output/$(BOARD)_$(STORAGE_TYPE).img.lz4
@@ -731,7 +734,7 @@ $(BUILDDIR)/image-compile-stamp: $(BUILDDIR)/image-customize-stamp
 		cp -p $(BSP_INSTALL_DIR)/kernel.img /tmp/rom/boot/ ; \
 		cp -p $(BSP_INSTALL_DIR)/uboot.bin /tmp/rom/boot/ ; \
 		touch /tmp/rom/boot/rec ; \
-		cd $(BUILDDIR) && genimage --config /configs/chip/$(CHIP_FAMILY)/genimage_sd.cfg --tmppath /tmp/genimage --rootpath /tmp/rom/ ; \
+		cd $(BUILDDIR) && genimage --config /configs/chip/$(CHIP_FAMILY)/genimage_sdcard.cfg --tmppath /tmp/genimage --rootpath /tmp/rom/ ; \
 		mv $(BUILDDIR)/images/sdcard.img $(BUILDDIR)/images/$(BOARD)_sdcard.img ; \
 		echo "Image Version: $(GIT_REF)" > $(BUILDDIR)/images/README.md ; \
 		echo "App Version: $(IMAGE_APP_VERSION)" >> $(BUILDDIR)/images/README.md ; \
