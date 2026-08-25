@@ -6,7 +6,7 @@ to build arm version image with maximize available memory.
 so other details or other boards support(RISC-V), please go back to source repository.  
 [sophgo-sg200x-debian](https://github.com/scpcom/sophgo-sg200x-debian)  
 
-## Memory Allocate Compare
+## Memory Allocate Compare (old record)
 | | total | used | free | shared | buff/cache | available |
 | :---         |     :---:      |     :---:      |     :---:      |     :---:      |     :---:      |     :---:      |
 | Mem(original) | 155Mi | 66Mi | 3.9Mi | 708Ki | 92Mi | 89Mi |
@@ -25,8 +25,22 @@ if you work on Linux, you can follow [the original description](https://github.c
 I work on Windows, so... 
 1. use [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd) to unzip(lz4) to get img file.
 2. use [balenaEtcher](https://etcher.balena.io/) to fash to sdcard.
+if you work on Linux, you can follow [the original description](https://github.com/scpcom/sophgo-sg200x-debian?tab=readme-ov-file#duo256-duos-and-licheervnano).
+
+I work on Windows, so... 
+1. use [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd) to unzip(lz4) to get img file.
+2. use [balenaEtcher](https://etcher.balena.io/) to fash to sdcard.
 
 ## Image Info
+### SSH Login
+you can SSH access by default when you connect to ethernet or [RNDIS](https://github.com/sunglee42/sophgo-sg200x-debian-a53?tab=readme-ov-file#USB%20Gadget%20Support).    
+Logins: ```debian/rv```  
+
+root login is disabled via SSH(default), you need to change setting to enable it(experiment only).  
+on ```sudo nano /etc/ssh/sshd_config``` with ```PermitRootLogin yes```  
+after that try ```sudo service ssh restart``` or reboot to apply setting.  
+
+the password is same as ```rv```.  
 ### SSH Login
 you can SSH access by default when you connect to ethernet or [RNDIS](https://github.com/sunglee42/sophgo-sg200x-debian-a53?tab=readme-ov-file#USB%20Gadget%20Support).    
 Logins: ```debian/rv```  

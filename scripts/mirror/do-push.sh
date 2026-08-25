@@ -100,6 +100,11 @@ for f in */.git ; do
       do_pull_push $x $u $s
     done
     git checkout $b
+  elif echo $d | grep -q -E '^ffmpeg$' ; then
+    for x in 3rd 3rd-6.1 ; do
+      do_pull_push $x $u $s
+    done
+    git checkout $b
   elif echo $d | grep -q -E '^fsbl$' ; then
     for x in licheervnano-cvisdk licheervnano ; do
       do_pull_push $x $u $s
@@ -111,12 +116,22 @@ for f in */.git ; do
     done
     git checkout $b
   elif echo $d | grep -q -E '^kernel$|^linux' ; then
-    for x in licheervnano-merged-5.10.y nanokvmpro-4.19.y licheervnano-cvisdk-5.10.y licheervnano-5.10.y ; do
+    for x in licheervnano-merged-5.10.y nanokvmpro-4.19.y licheervnano-cvisdk-5.10.y licheervnano-5.10.y sbc-6.6.y spacemit-6.6.y ; do
+      do_pull_push $x $u $s
+    done
+    git checkout $b
+  elif echo $d | grep -q -E '^maixcdk-dl-pkgs$' ; then
+    for x in main full ; do
       do_pull_push $x $u $s
     done
     git checkout $b
   elif echo $d | grep -q -E '^middleware$' ; then
     for x in maix_mmf-cvisdk licheervnano ; do
+      do_pull_push $x $u $s
+    done
+    git checkout $b
+  elif echo $d | grep -q -E '^alsa-lib|alsa_lib$' ; then
+    for x in 3rd master ; do
       do_pull_push $x $u $s
     done
     git checkout $b
@@ -132,6 +147,11 @@ for f in */.git ; do
     git checkout $b
   elif echo $d | grep -q -E '^opensbi$' ; then
     for x in licheervnano-cvisdk-1.2 licheervnano-0.9 ; do
+      do_pull_push $x $u $s
+    done
+    git checkout $b
+  elif echo $d | grep -q -E '^openssl$' ; then
+    for x in 3rd 3rd-3.0 OpenSSL_1_1_1-stable openssl-3.0 ; do
       do_pull_push $x $u $s
     done
     git checkout $b
@@ -157,6 +177,11 @@ for f in */.git ; do
     git checkout $b
   elif echo $d | grep -q -E '^miniz$' ; then
     for x in 3rd cvi ; do
+      do_pull_push $x $u $s
+    done
+    git checkout $b
+  elif echo $d | grep -q -E '^pyca-cryptography$' ; then
+    for x in 2.4.x 38.0.x main ; do
       do_pull_push $x $u $s
     done
     git checkout $b
@@ -203,6 +228,9 @@ for f in */.git ; do
     do_push_tags '[0-9]\.*'
   elif echo $d | grep -q -E '^ade' ; then
     do_push_tags 'v0\.*'
+  elif echo $d | grep -q -E '^alsa-lib|alsa_lib$' ; then
+    do_push_tags 'v1.2.1?'
+    do_push_tags 'v1.2.1?.*'
   elif echo $d | grep -q -E '^cvi_pinmux|^duo-pinmux$' ; then
     do_push_tags '[0-9]\.*'
   elif echo $d | grep -q -E '^capstone$' ; then
@@ -213,11 +241,17 @@ for f in */.git ; do
     do_push_tags 'v[0-9]\.*'
   elif echo $d | grep -q -E '^edk2$' ; then
     do_push_tags 'edk2-stable2020*'
+ elif echo $d | grep -q -E '^ffmpeg$' ; then
+    do_push_tags 'n4.4*'
+    do_push_tags 'n6.1*'
   elif echo $d | grep -q -E '^flatbuffers|^glog$' ; then
     do_push_tags 'v*'
+  elif echo $d | grep -q -E '^harfbuzz$' ; then
+    do_push_tags '8.*'
   elif echo $d | grep -q -E '^kernel$|^linux' ; then
     do_push_tags 'v4.19*'
     do_push_tags 'v5.10*'
+    do_push_tags 'v6.6*'
   elif echo $d | grep -q -E '^krb5$' ; then
     do_push_tags 'krb5-1.17*'
   elif echo $d | grep -q -E '^eigen|^libeigen$' ; then
@@ -227,18 +261,27 @@ for f in */.git ; do
   elif echo $d | grep -q -E '^janus-gateway$' ; then
     do_push_tags 'v1.*'
   elif echo $d | grep -q -E '^kaldi-native-fbank$' ; then
+    do_push_tags 'v1.20*'
     do_push_tags 'v1.21*'
   elif echo $d | grep -q -E '^kissfft$' ; then
     do_push_tags '131*'
   elif echo $d | grep -q -E '^kvmd$' ; then
     do_push_tags 'v4.1??'
     do_push_tags 'nanokvm_pro_1.*'
+  elif echo $d | grep -q -E '^libdatachannel$' ; then
+    do_push_tags 'v0.2?.*'
+  elif echo $d | grep -q -E '^libjuice$' ; then
+    do_push_tags 'v1.7.*'
+  elif echo $d | grep -q -E '^libsrtp$' ; then
+    do_push_tags 'v2.7.*'
   elif echo $d | grep -q -E '^libslirp$' ; then
     do_push_tags 'v4.*'
   elif echo $d | grep -q -E '^libwebsockets$' ; then
     do_push_tags 'v4\.*'
   elif echo $d | grep -q -E '^LicheeSG-Nano-Build$' ; then
     do_push_tags 'v*'
+  elif echo $d | grep -q -E '^marisa-trie$' ; then
+    do_push_tags 'v0.*'
   elif echo $d | grep -q -E '^maixcam-skeleton$' ; then
     do_push_tags 'v*'
   elif echo $d | grep -q -E '^meson$' ; then
@@ -249,14 +292,29 @@ for f in */.git ; do
     do_push_tags 'v2.*'
   elif echo $d | grep -q -E '^nanomsg$' ; then
     do_push_tags '[0-9]\.*'
+  elif echo $d | grep -q -E '^onnxruntime$' ; then
+    do_push_tags 'v1.2?.*'
+  elif echo $d | grep -q -E '^opencc$' ; then
+    do_push_tags 'ver.1.1.*'
   elif echo $d | grep -q -E '^opencv$' ; then
     do_push_tags '[0-9]\.*'
   elif echo $d | grep -q -E '^opensbi$' ; then
     do_push_tags 'v*'
   elif echo $d | grep -q -E '^openssl$' ; then
     do_push_tags 'OpenSSL_1_1_*'
+    do_push_tags 'openssl-3.0\.*'
   elif echo $d | grep -q -E '^overlayfs-tools$' ; then
     do_push_tags 'v20*'
+  elif echo $d | grep -q -E '^plog$' ; then
+    do_push_tags '1\.1\.*'
+  elif echo $d | grep -q -E '^pyca-cryptography' ; then
+    do_push_tags '2.3*'
+    do_push_tags '2.4*'
+    do_push_tags '38.0.*'
+  elif echo $d | grep -q -E '^quirc$' ; then
+    do_push_tags 'v1.*'
+  elif echo $d | grep -q -E '^rapidjson$' ; then
+    do_push_tags 'v1.*'
   elif echo $d | grep -q -E '^riscv-gnu-toolchain$' ; then
     do_push_tags 'riscv*-10.?.*'
   elif echo $d | grep -q -E '^rtc-tools' ; then
@@ -266,8 +324,16 @@ for f in */.git ; do
   elif echo $d | grep -q -E '^tdl_sdk' ; then
     do_push_tags 'v1\.*'
     do_push_tags 'v2\.*'
+  elif echo $d | grep -q -E '^tinyalsa' ; then
+    do_push_tags 'v1\.*'
+    do_push_tags '1\.1\.*'
+    do_push_tags 'v2\.*'
   elif echo $d | grep -q -E '^u-boot$' ; then
     do_push_tags 'v20*'
+  elif echo $d | grep -q -E '^uchardet$' ; then
+    do_push_tags 'v0.0.*'
+  elif echo $d | grep -q -E '^usrsctp' ; then
+    do_push_tags 'v0\.9\.*'
   elif echo $d | grep -q -E '^ustreamer$' ; then
     do_push_tags 'v6.*'
   elif echo $d | grep -q -E '^uv$' ; then
@@ -276,6 +342,8 @@ for f in */.git ; do
     do_push_tags 'v*'
   elif echo $d | grep -q -E '^zram-config$' ; then
     do_push_tags 'v*'
+  elif echo $d | grep -q -E '^zxing-cpp$' ; then
+    do_push_tags 'v2\.?\.*'
   fi
 
   cd - > /dev/null

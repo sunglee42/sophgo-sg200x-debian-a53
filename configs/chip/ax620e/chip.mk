@@ -5,15 +5,20 @@ MIDDLEWAREVERSION=2024.11.20
 CROSS_COMPILE_64 = aarch64-none-linux-gnu-
 CROSS_COMPILE_32 = arm-none-linux-gnueabihf-
 
-CROSS_COMPILE_PATH_64 = /host-tools/gcc/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu
-CROSS_COMPILE_PATH_32 = /host-tools/gcc/gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf
+CROSS_COMPILE_PATH_64 = /host-tools/gcc/arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu
+CROSS_COMPILE_PATH_32 = /host-tools/gcc/arm-gnu-toolchain-11.3.rel1-x86_64-arm-none-linux-gnueabihf
+
+SDK_SYSROOT_64 = $(CROSS_COMPILE_PATH_64)/aarch64-none-linux-gnu/libc
+SDK_SYSROOT_32 = $(CROSS_COMPILE_PATH_32)/arm-none-linux-gnueabihf/libc
 
 ifeq ($(SDK_VER),64bit)
 SDK_CROSS_COMPILE_PATH = $(CROSS_COMPILE_PATH_64)
 SDK_CROSS_COMPILE_PREFIX = $(CROSS_COMPILE_64)
+SDK_SYSROOT = $(SDK_SYSROOT_64)
 else ifeq ($(SDK_VER),32bit)
 SDK_CROSS_COMPILE_PATH = $(CROSS_COMPILE_PATH_32)
 SDK_CROSS_COMPILE_PREFIX = $(CROSS_COMPILE_32)
+SDK_SYSROOT = $(SDK_SYSROOT_32)
 else
 $(error $(red)SDK_VER is invalid$(reset))
 endif
@@ -61,6 +66,9 @@ FSBL_TARGETS += $(patsubst %,$(BUILDDIR)/fsbl-%.package-stamp,$(PANEL_TUNING_EXT
 endif
 endif
 
+MIDDLEWARE_OUT_DIR=$(BUILDDIR)/middleware/install/system/usr
+MIDDLEWARE_TARGET_DIR=/opt
+
 BSPDEPENDS = $(CHIP_VENDOR)-middleware-$(BOARD)\
  $(CHIP_VENDOR)-osdrv-$(BOARD)-$(VARIANT)\
  $(CHIP_VENDOR)-bsp-$(BOARD)-$(VARIANT)\
@@ -72,6 +80,8 @@ BSPFILTER =
 AIC8800_TARGET_DIR ?= /opt/firmware
 
 include $(wildcard /builder/addons/*/addon.mk)
+
+SDK_OSS_TARBALL_DIR = $(BUILDDIR)/oss/oss_release_tarball/$(SDK_VER)
 
 addon-targets = $(patsubst "%,$(BUILDDIR)/%-stamp,$(patsubst %",%,$(IMAGE_ADDITIONS)))
 _PACKAGES = $(patsubst "%,%,$(patsubst %",%,$(PACKAGES)))
@@ -105,10 +115,10 @@ endef
 
 $(BUILDDIR)/toolchain-prepare-patch-stamp:
 	@echo "$(COLOUR_GREEN)Patching Toolchain for $(BOARD)$(END_COLOUR)"
-	@[ "$(TOOLCHAIN_URL)" = "X" ] || sed -i 's|^tcurl=.*|tcurl=$(TOOLCHAIN_URL)|g' /builder/replace-all-arm-a-toolchains.sh
+	@[ "$(TOOLCHAIN_URL)" = "X" ] || sed -i 's|^tcurl=.*|tcurl=$(TOOLCHAIN_URL)|g' /builder/replace-all-arm-toolchains.sh
 	@if [ "$(UBOOT_ARCH)" = "arm" ]; then \
 		rm -rf /host-tools/gcc/riscv64-*/ && \
-		cd / && /builder/replace-all-arm-a-toolchains.sh && \
+		cd / && tcver=11.3.rel1 /builder/replace-all-arm-toolchains.sh && \
 		mv /ramdisk $(BUILDDIR)/ ; \
 	fi
 	@#cd / && /builder/fix-thead-glibc-toolchain.sh
@@ -285,8 +295,9 @@ $(BUILDDIR)/middleware-prepare-configure-stamp: $(BUILDDIR)/middleware-prepare-p
 
 $(BUILDDIR)/middleware-compile-stamp: $(BUILDDIR)/middleware-prepare-configure-stamp
 	@echo "$(COLOUR_GREEN)Building Middleware for $(BOARD)$(END_COLOUR)"
-	@mkdir -pv $(BUILDDIR)/middleware/install/system/lib/
-	@cp -p $(BUILDDIR)/bsp/axerabin/$(CHIP)/rootfs/opt/lib/*.so* $(BUILDDIR)/middleware/install/system/lib/
+	@mkdir -pv $(MIDDLEWARE_OUT_DIR)/lib/
+	@cp -p $(BUILDDIR)/bsp/axerabin/$(CHIP)/rootfs/opt/lib/*.so* $(MIDDLEWARE_OUT_DIR)/lib/
+	@rsync -avpPxH $(BUILDDIR)/bsp/axerabin/$(CHIP)/rootfs/opt/include/ $(BUILDDIR)/middleware/install/system/usr/include/
 	@touch $@
 
 $(BUILDDIR)/middleware-package-stamp: $(BUILDDIR)/middleware-compile-stamp
@@ -294,21 +305,37 @@ $(BUILDDIR)/middleware-package-stamp: $(BUILDDIR)/middleware-compile-stamp
 	@echo "$(COLOUR_GREEN)Packaging Middleware for $(BOARD)$(END_COLOUR)"
 	@rm -rf $(BUILDDIR)/middleware/3rdparty/tmp/
 	@$(eval MV=$(shell cd $(BUILDDIR)/middleware && git log -1 --format="%at" | xargs -I{} date -d @{} +-%Y%m%d-${KERNELREV}))
-	@$(eval MIDDLEWARE_PACKAGE_DIR=$(BUILDDIR)/package/$(CHIP_VENDOR)-middleware-$(BOARD)-$(MIDDLEWAREVERSION))
-	@$(eval MIDDLEWARE_TARGET_DIR=/opt)
+	@$(eval MIDDLEWARE_PACKAGE_NAME=$(CHIP_VENDOR)-middleware-$(BOARD))
+	@$(eval MIDDLEWARE_PACKAGE_DIR=$(BUILDDIR)/package/$(MIDDLEWARE_PACKAGE_NAME)-$(MIDDLEWAREVERSION))
 	@mkdir -p $(MIDDLEWARE_PACKAGE_DIR)
 	@cp -r /builder/deb/cvitek-middleware/* $(MIDDLEWARE_PACKAGE_DIR)/
 	@mkdir -pv $(MIDDLEWARE_PACKAGE_DIR)$(MIDDLEWARE_TARGET_DIR)/
-	@rsync -avpPxH $(BUILDDIR)/middleware/install/system/ $(MIDDLEWARE_PACKAGE_DIR)$(MIDDLEWARE_TARGET_DIR)/
+	@rsync -avpPxH $(MIDDLEWARE_OUT_DIR)/ $(MIDDLEWARE_PACKAGE_DIR)$(MIDDLEWARE_TARGET_DIR)/
+	@rm -rf $(MIDDLEWARE_PACKAGE_DIR)$(MIDDLEWARE_TARGET_DIR)/include/
 	@sed -i 's/Architecture: riscv64/Architecture: $(DEB_ARCH)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
 	@sed -i 's/Version: 1.0.0/Version: $(MIDDLEWAREVERSION)$(MV)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
-	@sed -i 's/Package: cvitek-middleware/Package: $(CHIP_VENDOR)-middleware-$(BOARD)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/Package: cvitek-middleware/Package: $(MIDDLEWARE_PACKAGE_NAME)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
 	@sed -i 's/CVITEK/$(CHIP_VENDOR)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
 	@sed -i 's/CV18xx and SG200X/$(CHIP)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
 	@sed -i 's/cv181x/$(CHIP)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
 	@sed -i 's/RISC-V/$(ARCH_NAME)/' $(MIDDLEWARE_PACKAGE_DIR)/DEBIAN/control
-	@cd $(BUILDDIR)/package/ && dpkg-deb --build $(CHIP_VENDOR)-middleware-$(BOARD)-$(MIDDLEWAREVERSION) $(CHIP_VENDOR)-middleware-$(BOARD)_$(MIDDLEWAREVERSION)$(MV)_$(DEB_ARCH).deb
-	@cp $(BUILDDIR)/package/$(CHIP_VENDOR)-middleware-$(BOARD)_$(MIDDLEWAREVERSION)$(MV)_$(DEB_ARCH).deb /output/
+	@cd $(BUILDDIR)/package/ && dpkg-deb --build $(MIDDLEWARE_PACKAGE_NAME)-$(MIDDLEWAREVERSION) $(MIDDLEWARE_PACKAGE_NAME)_$(MIDDLEWAREVERSION)$(MV)_$(DEB_ARCH).deb
+	@cp $(BUILDDIR)/package/$(MIDDLEWARE_PACKAGE_NAME)_$(MIDDLEWAREVERSION)$(MV)_$(DEB_ARCH).deb /output/
+	@$(eval MIDDLEWARE_DEV_PACKAGE_NAME=$(CHIP_VENDOR)-middleware-dev-$(BOARD))
+	@$(eval MIDDLEWARE_DEV_PACKAGE_DIR=$(BUILDDIR)/package/$(MIDDLEWARE_DEV_PACKAGE_NAME)-$(MIDDLEWAREVERSION))
+	@mkdir -p $(MIDDLEWARE_DEV_PACKAGE_DIR)
+	@cp -r /builder/deb/cvitek-middleware/* $(MIDDLEWARE_DEV_PACKAGE_DIR)/
+	@mkdir -pv $(MIDDLEWARE_DEV_PACKAGE_DIR)$(MIDDLEWARE_TARGET_DIR)/
+	@rsync -avpPxH $(MIDDLEWARE_OUT_DIR)/include/ $(MIDDLEWARE_DEV_PACKAGE_DIR)$(MIDDLEWARE_TARGET_DIR)/include/
+	@sed -i 's/Architecture: riscv64/Architecture: $(DEB_ARCH)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/Version: 1.0.0/Version: $(MIDDLEWAREVERSION)$(MV)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/Package: cvitek-middleware/Package: $(MIDDLEWARE_DEV_PACKAGE_NAME)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/CVITEK/$(CHIP_VENDOR)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/CV18xx and SG200X/$(CHIP)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/cv181x/$(CHIP)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/RISC-V/$(ARCH_NAME)/' $(MIDDLEWARE_DEV_PACKAGE_DIR)/DEBIAN/control
+	@cd $(BUILDDIR)/package/ && dpkg-deb --build $(MIDDLEWARE_DEV_PACKAGE_NAME)-$(MIDDLEWAREVERSION) $(MIDDLEWARE_DEV_PACKAGE_NAME)_$(MIDDLEWAREVERSION)$(MV)_$(DEB_ARCH).deb
+	@cp $(BUILDDIR)/package/$(MIDDLEWARE_DEV_PACKAGE_NAME)_$(MIDDLEWAREVERSION)$(MV)_$(DEB_ARCH).deb /output/
 	@touch $@
 
 middleware: $(BUILDDIR)/middleware-package-stamp
@@ -414,18 +441,18 @@ define firmware_package_action
 	@$(eval FIRMWARE_PACKAGE_DIR=$(BUILDDIR)/package/$(FIRMWARE_PACKAGE_NAME)-$(FIRMWAREVERSION))
 	@$(eval PANEL_NAME_FIRMWARE=$(shell echo '${2}' | cut -d '-' -f 2- | tr '-' '_'))
 	@mkdir -p $(FIRMWARE_PACKAGE_DIR)
-	@cp -r /builder/deb/cvitek-fsbl/* $(FIRMWARE_PACKAGE_DIR)/
+	@cp -r /builder/deb/axera-firmware/* $(FIRMWARE_PACKAGE_DIR)/
 	@mkdir -p $(FIRMWARE_PACKAGE_DIR)/usr/lib/$(CHIP_VENDOR)-firmware/$(BOARD_EXT)${2}/
 	@cp $(BSP_INSTALL_DIR)/uboot.bin $(FIRMWARE_PACKAGE_DIR)/usr/lib/$(CHIP_VENDOR)-firmware/$(BOARD_EXT)${2}/u-boot_signed.bin
 	@cp $(BSP_INSTALL_DIR)/dtb.img $(FIRMWARE_PACKAGE_DIR)/usr/lib/$(CHIP_VENDOR)-firmware/$(BOARD_EXT)${2}/fdt_signed.dtb
 	@cp $(BSP_INSTALL_DIR)/kernel.img $(FIRMWARE_PACKAGE_DIR)/usr/lib/$(CHIP_VENDOR)-firmware/$(BOARD_EXT)${2}/boot_signed.bin
-	@sed -i 's|cvitek-fsbl/licheervnano|$(CHIP_VENDOR)-firmware/$(BOARD_EXT)${2}|g' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
-	@[ "X$(PANEL_NAME_FIRMWARE)" = "X" ] || sed -i s/'^panel='/'panel='$(PANEL_NAME_FIRMWARE)/g $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
+	@sed -i 's|axera-firmware/maixcam2|$(CHIP_VENDOR)-firmware/$(BOARD_EXT)${2}|g' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
+	@[ "X$(findstring kvm,$(VARIANT))" = "X" ] || sed -i s/'^panel=.*'/'panel='jd9853/g $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
+	@[ "X$(PANEL_NAME_FIRMWARE)" = "X" ] || sed -i s/'^panel=.*'/'panel='$(PANEL_NAME_FIRMWARE)/g $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
 	@chmod ugo+rx $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
-	@rm -f $(FIRMWARE_PACKAGE_DIR)/DEBIAN/postinst
-	@sed -i 's/Architecture: riscv64/Architecture: $(DEB_ARCH)/' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/Architecture: arm64/Architecture: $(DEB_ARCH)/' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control
 	@sed -i 's/Version: 1.1.0/Version: $(FIRMWAREVERSION)$(FV)/' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control
-	@sed -i 's/Package: cvitek-fsbl/Package: $(FIRMWARE_PACKAGE_NAME)/' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control
+	@sed -i 's/Package: axera-firmware/Package: $(FIRMWARE_PACKAGE_NAME)/' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control
 	@if [ "$(BOARD)" = "$(BOARD_EXT)" ]; then \
 		sed -i '/Provides: .*/d' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control && \
 		sed -i '/Replaces: .*/d' $(FIRMWARE_PACKAGE_DIR)/DEBIAN/control ; \
@@ -451,7 +478,7 @@ $(BUILDDIR)/bsp-prepare-clone-stamp:
 
 $(BUILDDIR)/bsp-prepare-checkout-stamp: $(BUILDDIR)/bsp-prepare-clone-stamp
 	@echo "$(COLOUR_GREEN)Checking out BSP for $(BOARD)$(END_COLOUR)"
-	@cd $(BUILDDIR)/bsp && git checkout 8222716
+	@cd $(BUILDDIR)/bsp && git checkout 1a76842
 	@cd $(BUILDDIR)/bsp && git submodule set-url axerabin $(GIT_USER_URL)/axerabin
 	@cd $(BUILDDIR)/bsp && git submodule set-url linux $(GIT_USER_URL)/linux
 	@cd $(BUILDDIR)/bsp && git submodule set-url u-boot $(GIT_USER_URL)/u-boot

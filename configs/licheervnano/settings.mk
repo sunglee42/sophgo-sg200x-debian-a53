@@ -18,8 +18,9 @@ PARTITION_FILE=partition_sd.xml
 STORAGE_TYPE=sd
 VARIANT?=e
 
-PACKAGES += " hostapd udhcpd wireless-regdb wpasupplicant"
+PACKAGES += " hostapd udhcpd wireless-regdb wpasupplicant xz-utils"
 PACKAGES += " python3-numpy python3-pil"
+DEV_PACKAGES += " build-essential"
 
 IMAGE_ADDITIONS += "sensor-config"
 IMAGE_ADDITIONS += "device-key"
@@ -29,9 +30,11 @@ IMAGE_ADDITIONS += "cvi-pinmux"
 ifneq ("$(findstring kvm,$(VARIANT))","")
 IMAGE_ADDITIONS += "nanokvm"
 else
+IMAGE_ADDITIONS += "maixcdk"
 IMAGE_ADDITIONS += "maixapp"
 IMAGE_ADDITIONS += "tpusdk"
 endif
+IMAGE_ADDITIONS += "python3-dev"
 IMAGE_ADDITIONS += "python3-textual"
 IMAGE_ADDITIONS += "usb-device"
 IMAGE_ADDITIONS += "zram-config"
