@@ -6,11 +6,12 @@ to build arm version image with maximize available memory.
 so other details or other boards support(RISC-V), please go back to source repository.  
 [sophgo-sg200x-debian](https://github.com/scpcom/sophgo-sg200x-debian)  
 
-## Memory Allocate Compare (old record)
+## Memory Allocate Compare
 | | total | used | free | shared | buff/cache | available |
 | :---         |     :---:      |     :---:      |     :---:      |     :---:      |     :---:      |     :---:      |
 | Mem(original) | 155Mi | 66Mi | 3.9Mi | 708Ki | 92Mi | 89Mi |
 | Mem(maximize) | 219Mi | 67Mi | 45Mi | 712Ki | 115Mi | 152Mi |
+| Mem(New Version) | 223Mi | 65Mi | 45Mi | 704Ki | 120Mi | 157Mi |
 
 ## Hardware Mod
 if want to switch RISC-V(C906) to ARM(A53), you need to change a resistor position.  
