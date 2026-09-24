@@ -149,14 +149,14 @@ systemctl enable finalize-image.service
 rm -rf /etc/apt/sources.list.d/multistrap-debian.list
 
 #apt-key add /tmp/install/public-key.asc
-gpg --dearmor /tmp/install/public-key.asc
-cp /tmp/install/public-key.asc.gpg /etc/apt/trusted.gpg.d/scpcom-packages.gpg
+# gpg --dearmor /tmp/install/public-key.asc # official don't have licheea53nano-e
+# cp /tmp/install/public-key.asc.gpg /etc/apt/trusted.gpg.d/scpcom-packages.gpg # official don't have licheea53nano-e
 
 cat > /etc/apt/sources.list < /tmp/install/deb_sources
 
 mkdir -p /etc/apt/sources.list.d
 
-cat > /etc/apt/sources.list.d/scpcom-packages.list < /tmp/install/deb_user_sources
+# cat > /etc/apt/sources.list.d/scpcom-packages.list < /tmp/install/deb_user_sources # official don't have licheea53nano-e
 
 cat >> /etc/systemd/journald.conf <<EOJ
 RuntimeMaxUse=16M
