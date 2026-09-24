@@ -8,4 +8,4 @@ ifeq ("$(findstring kvm,$(VARIANT))","")
 PACKAGES += " network-manager"
 endif
 
-# IMAGE_ADDITIONS="gadget-nic" # non-essential functions
+IMAGE_ADDITIONS="gadget-nic"

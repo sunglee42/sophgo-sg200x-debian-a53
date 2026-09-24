@@ -18,25 +18,25 @@ PARTITION_FILE=partition_sd.xml
 STORAGE_TYPE=sd
 VARIANT?=e
 
-# PACKAGES += " hostapd udhcpd wireless-regdb wpasupplicant xz-utils" # disable wifi
-# PACKAGES += " python3-numpy python3-pil" # non-essential functions
-# DEV_PACKAGES += " build-essential" # non-essential functions
+PACKAGES += " hostapd udhcpd wireless-regdb wpasupplicant xz-utils"
+PACKAGES += " python3-numpy python3-pil"
+DEV_PACKAGES += " build-essential"
 
-# IMAGE_ADDITIONS += "sensor-config" # non-essential functions
+IMAGE_ADDITIONS += "sensor-config"
 IMAGE_ADDITIONS += "device-key"
 IMAGE_ADDITIONS += "ethernet-builtin"
-# IMAGE_ADDITIONS += "load-systemko" # non-essential functions
-# IMAGE_ADDITIONS += "cvi-pinmux" # non-essential functions
+IMAGE_ADDITIONS += "load-systemko"
+IMAGE_ADDITIONS += "cvi-pinmux"
 ifneq ("$(findstring kvm,$(VARIANT))","")
 IMAGE_ADDITIONS += "nanokvm"
-# else
-# IMAGE_ADDITIONS += "maixcdk" # non-essential functions
-# IMAGE_ADDITIONS += "maixapp" # non-essential functions
-# IMAGE_ADDITIONS += "tpusdk" # non-essential functions
+else
+IMAGE_ADDITIONS += "maixcdk"
+IMAGE_ADDITIONS += "maixapp"
+IMAGE_ADDITIONS += "tpusdk"
 endif
-# IMAGE_ADDITIONS += "python3-dev" # non-essential functions
-# IMAGE_ADDITIONS += "python3-textual" # non-essential functions
-# IMAGE_ADDITIONS += "usb-device" # non-essential functions
+IMAGE_ADDITIONS += "python3-dev"
+IMAGE_ADDITIONS += "python3-textual"
+IMAGE_ADDITIONS += "usb-device"
 IMAGE_ADDITIONS += "zram-config"
-# IMAGE_ADDITIONS += "wifi-builtin" # disable wifi, my board don't have it
-# IMAGE_ADDITIONS += "aic8800-firmware" # disable wifi, my board don't have it
+IMAGE_ADDITIONS += "wifi-builtin"
+IMAGE_ADDITIONS += "aic8800-firmware"
